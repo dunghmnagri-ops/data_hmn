@@ -13,6 +13,7 @@ st.caption("Đây là khung sườn để demo tích hợp chat AI.")
 
 # 💡 GIẢ LẬP DỮ LIỆU ĐÃ XỬ LÝ (df_processed)
 # Khung chat cần biến 'df_processed' là một DataFrame để có bối cảnh
+# Kiểm tra nếu df_processed chưa tồn tại trong global scope
 if "df_processed" not in globals():
     try:
         data = {
@@ -21,24 +22,25 @@ if "df_processed" not in globals():
             "Năm sau": [1500, 5500, 22000, 7500, 14500],
             "Tốc độ tăng trưởng (%)": [50.0, 10.0, 10.0, -6.25, 20.83]
         }
-        df_processed = pd.DataFrame(data)
+        # Tạo biến df_processed trong global scope
+        globals()["df_processed"] = pd.DataFrame(data) 
         st.subheader("Bảng Dữ liệu Đã Xử Lý (Mô phỏng)")
-        st.dataframe(df_processed, use_container_width=True, hide_index=True)
+        st.dataframe(globals()["df_processed"], use_container_width=True, hide_index=True)
         st.success("Đã tạo giả lập `df_processed`. Bạn có thể hỏi AI về bảng này!")
     except NameError:
         st.warning("Không thể tạo giả lập DataFrame. Khung chat sẽ chạy mà không có bối cảnh.")
-        df_processed = None
+        globals()["df_processed"] = None # Đặt giá trị None nếu không tạo được
 
 # =========================
 # 💬 KHUNG CHAT AI (ADD-ON)
-# Dán đoạn này vào CUỐI FILE, đã được bổ sung logic gọi Gemini
+# Logic gọi Gemini và chat
 # =========================
 
 st.markdown("---")
 st.header("💬 Chat AI về Báo cáo Tài chính")
 
 # Khởi tạo bộ nhớ hội thoại trong session
-if "chat_messages" not not in st.session_state:
+if "chat_messages" not in st.session_state:
     st.session_state.chat_messages = [
         {"role": "assistant", "content": "Xin chào! Mình là trợ lý phân tích tài chính. Bạn có thể hỏi về tăng trưởng, cơ cấu tài sản, khả năng thanh toán… hoặc gửi yêu cầu giải thích thêm dựa trên bảng bạn đã tải lên."}
     ]
