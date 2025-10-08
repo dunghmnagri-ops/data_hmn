@@ -1,13 +1,44 @@
+import streamlit as st
+import pandas as pd
+from google import genai
+from google.genai.errors import APIError 
+
+# =========================
+# 🏗️ PHẦN GIẢ LẬP CẤU TRÚC ỨNG DỤNG (GIỮ NGUYÊN)
+# Phần này mô phỏng các biến và hàm mà khung chat cần
+# =========================
+
+st.title("Ứng dụng Phân tích Tài chính với Gemini 📈")
+st.caption("Đây là khung sườn để demo tích hợp chat AI.")
+
+# 💡 GIẢ LẬP DỮ LIỆU ĐÃ XỬ LÝ (df_processed)
+# Khung chat cần biến 'df_processed' là một DataFrame để có bối cảnh
+if "df_processed" not in globals():
+    try:
+        data = {
+            "Chỉ tiêu": ["Tiền mặt", "Khoản phải thu", "Tổng tài sản", "Nợ ngắn hạn", "Vốn chủ sở hữu"],
+            "Năm trước": [1000, 5000, 20000, 8000, 12000],
+            "Năm sau": [1500, 5500, 22000, 7500, 14500],
+            "Tốc độ tăng trưởng (%)": [50.0, 10.0, 10.0, -6.25, 20.83]
+        }
+        df_processed = pd.DataFrame(data)
+        st.subheader("Bảng Dữ liệu Đã Xử Lý (Mô phỏng)")
+        st.dataframe(df_processed, use_container_width=True, hide_index=True)
+        st.success("Đã tạo giả lập `df_processed`. Bạn có thể hỏi AI về bảng này!")
+    except NameError:
+        st.warning("Không thể tạo giả lập DataFrame. Khung chat sẽ chạy mà không có bối cảnh.")
+        df_processed = None
+
 # =========================
 # 💬 KHUNG CHAT AI (ADD-ON)
-# Dán đoạn này vào CUỐI FILE, không cần sửa gì ở phần trên
+# Dán đoạn này vào CUỐI FILE, đã được bổ sung logic gọi Gemini
 # =========================
 
 st.markdown("---")
 st.header("💬 Chat AI về Báo cáo Tài chính")
 
 # Khởi tạo bộ nhớ hội thoại trong session
-if "chat_messages" not in st.session_state:
+if "chat_messages" not not in st.session_state:
     st.session_state.chat_messages = [
         {"role": "assistant", "content": "Xin chào! Mình là trợ lý phân tích tài chính. Bạn có thể hỏi về tăng trưởng, cơ cấu tài sản, khả năng thanh toán… hoặc gửi yêu cầu giải thích thêm dựa trên bảng bạn đã tải lên."}
     ]
@@ -35,13 +66,16 @@ if user_prompt:
     # 2) Chuẩn bị bối cảnh (nếu có bảng đã xử lý)
     context_text = ""
     try:
-        if attach_context and "df_processed" in locals() and isinstance(df_processed, pd.DataFrame):
+        # Lấy biến df_processed từ phạm vi toàn cục
+        df_processed_context = globals().get("df_processed")
+
+        if attach_context and isinstance(df_processed_context, pd.DataFrame):
             # Chỉ trích xuất 10 dòng đầu để gọn nhẹ
-            preview_rows = min(10, len(df_processed))
+            preview_rows = min(10, len(df_processed_context))
             context_text = (
                 "### Ngữ cảnh dữ liệu (trích gọn):\n"
-                + df_processed.head(preview_rows).to_markdown(index=False)
-                + "\n\nLưu ý: Bảng trên là trích gọn từ dữ liệu đã xử lý trong phiên làm việc."
+                + df_processed_context.head(preview_rows).to_markdown(index=False)
+                + "\n\nLưu ý: Bảng trên là trích gọn từ dữ liệu đã xử lý trong phiên làm việc. Hãy tham khảo nó khi trả lời."
             )
         elif attach_context:
             context_text = "### Ngữ cảnh dữ liệu: Chưa có bảng đã xử lý trong phiên hiện tại."
